@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src https://zjdxgcmeraiodigwdxpy.supabase.co wss://zjdxgcmeraiodigwdxpy.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Woodsman Quiz · Phone Camera</title><link rel="icon" href="icon.png"><link rel="stylesheet" href="camera-page.css">
+<script defer src="vendor/supabase-2.116.0.js"></script><script defer src="config.js"></script><script defer src="connection.js"></script><script defer src="camera-wire.js"></script><script defer src="camera.js"></script>
+</head><body><main>
+<header><img src="icon.png" alt=""><div><strong>WOODSMAN QUIZ</strong><span>Phone camera</span></div><button id="camera-logout" hidden>Sign out</button></header>
+<section id="camera-link-help" class="card" hidden><p class="eyebrow">CONNECT TO YOUR QUIZ</p><h1>Connect when you’re ready.</h1><p>On the quiz computer or remote operator, open <strong>Show tools → Phone camera</strong>, then scan its QR code with this phone. You can do this midway through the quiz.</p><p>The code connects this camera to that particular quiz. Sign in with the same quiz host account.</p><a href="index.html">Open remote operator</a></section>
+<section id="camera-login" class="card" hidden><p class="eyebrow">PHYSICAL ROUNDS · LIVE VIDEO</p><h1>A closer look.</h1><p>Sign in with the same quiz host account as the venue. Your microphone stays off.</p><form id="camera-login-form"><label>Email<input id="camera-email" type="email" autocomplete="username" required></label><label>Password<input id="camera-password" type="password" autocomplete="current-password" required></label><button id="camera-login-button" class="primary" type="submit">Sign in</button></form><p id="camera-login-status" role="status"></p></section>
+<section id="camera-workspace" hidden>
+<div class="card"><div class="camera-heading"><div><p class="eyebrow" id="camera-venue">YOUR VENUE</p><h1>Phone camera</h1></div><span id="camera-air" class="badge">NOT CONNECTED</span></div><p id="camera-status" role="status" aria-live="polite">Tap Connect camera and allow camera access.</p>
+<div class="phone-view"><video id="phone-preview" autoplay muted playsinline></video><span>MICROPHONE OFF</span></div>
+<div class="buttons"><button id="camera-start" class="primary">Connect camera</button><button id="camera-switch" disabled>Switch camera</button><button id="camera-stop" disabled>Stop camera</button></div>
+<p class="hint">Keep this page open and your phone unlocked. Hold the phone sideways for a wide picture. The operator chooses when to show it on the broadcast.</p><p class="hint">Use the same Wi-Fi as the quiz computer where possible. If it cannot connect, check the optional relay settings on the venue computer.</p></div>
+</section>
+<footer>Woodsman Quiz · 2026.10.18.1 · Camera is not recorded.</footer>
+</main></body></html>

@@ -1,12 +1,12 @@
 (() => {
   const $=id=>document.getElementById(id), db=QuizRemoteConnection.client(), client=crypto.randomUUID();
   let identity=null, channel=null, session=null, frame=null, received=0, pending=null, connectionRun=0, joined=false;
-  let refreshTimer=null, helloTimer=null;
-  const notice=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error)};
+  let refreshTimer=null, helloTimer=null,awaitRevision=0;
+  const notice=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error);$('mirror-notice').textContent=text;$('mirror-notice').hidden=!error;};
   const fresh=()=>joined&&frame&&Date.now()-received<6000;
   const owns=()=>fresh()&&frame.lease===client;
   function status() {
-    const connected=fresh(), available=owns()&&!pending;
+    const connected=fresh(), available=owns()&&!pending&&frame.revision>=awaitRevision;
     $('connection').textContent=connected?(frame.lease===client?'Connected · you have control':'Connected · viewing'):(session?'Connection lost or waiting for venue':'Choose a quiz');
     $('connection').classList.toggle('online',connected);
     $('advance').disabled=!available||!frame.advance||frame.fading;
@@ -15,7 +15,7 @@
     $('take-control').disabled=!connected||!!pending||frame.lease===client;
     QuizOperatorMirror.enable(available);
     $('mirror-blocker').hidden=available;
-    $('mirror-blocker').textContent=pending?'Waiting for the venue…':connected?'Click Take control to use this operator window.':'Waiting for the venue connection…';
+    $('mirror-blocker').textContent=pending?'Waiting for the venue…':owns()&&frame.revision<awaitRevision?'Updating controls…':connected?'Click Take control to use this operator window.':'Waiting for the venue connection…';
     if(!connected){$('mode').textContent='NOT CONNECTED';$('mode').className='pill';}
     else {$('mode').textContent=frame.mode;$('mode').className='pill '+frame.mode.toLowerCase();}
   }
@@ -29,7 +29,7 @@
   }
   async function send(packet){return QuizRemoteConnection.send(channel,session,{...packet,client});}
   async function command(action,target,value,confirmed=false,edits=[]) {
-    if(!owns()||pending){notice('Wait for the venue connection and take control first.',true);return;}
+    if(!owns()||pending||frame.revision<awaitRevision){notice('Wait for the updated controls and take control first.',true);return;}
     const packet={kind:'command',id:crypto.randomUUID(),action,target,value,confirmed,edits,nonce:frame.nonce,revision:frame.revision};
     const timeout=setTimeout(()=>{
       if(pending?.id!==packet.id)return;
@@ -54,6 +54,7 @@
     }
     if(packet.kind==='ack'&&packet.client===client&&packet.id===pending?.id){
       const previous=pending;clearTimeout(previous.timeout);pending=null;
+      if(Number.isInteger(packet.revision))awaitRevision=Math.max(awaitRevision,packet.revision);
       notice(packet.message,packet.status==='rejected');if(packet.status==='done')QuizOperatorMirror.applied(previous);status();
       if(packet.status==='confirm'&&await confirmAction(packet.message)){
         // Read a fresh frame before resubmitting an explicitly confirmed action.
@@ -91,7 +92,7 @@
   async function disconnect() {
     ++connectionRun;joined=false;clearInterval(helloTimer);
     if(pending)clearTimeout(pending.timeout);pending=null;
-    const old=channel;channel=null;session=null;frame=null;received=0;
+    const old=channel;channel=null;session=null;frame=null;received=0;awaitRevision=0;
     if(old)await db.removeChannel(old);
     QuizOperatorMirror.reset();status();
   }
@@ -124,6 +125,7 @@
   $('take-control').onclick=async()=>{if(await confirmAction('Take control of this quiz on this computer? Any other remote operator will switch to viewing.'))send({kind:'claim',takeover:true}).catch(e=>notice(e.message,true));};
   $('switch-mode').onclick=async()=>{const value=frame.mode==='TEST'?'LIVE':'TEST';if(await confirmAction(value==='LIVE'?'Switch to LIVE? Public phones will follow the quiz.':'Switch to TEST? Public phones will stop following this quiz.'))command('mode',null,value);};
   function key(event){
+    if(event.target.closest('#quiz-appearance-settings'))return;
     if(event.shiftKey||event.ctrlKey||event.metaKey||event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')||$('confirm-dialog').open||$('workspace').hidden)return;
     if(!event.altKey&&frame?.keys?.includes(event.code)){event.preventDefault();if(!event.repeat&&owns()&&!pending)command('key',null,event.code);return;}
     if(!(event.code==='Tab'&&!event.altKey)&&!(event.code==='ArrowRight'&&event.altKey))return;

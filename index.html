@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-src 'self' about:; img-src 'self' data:; connect-src https://zjdxgcmeraiodigwdxpy.supabase.co wss://zjdxgcmeraiodigwdxpy.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Woodsman’s Quiz · Remote Operator</title>
 <link rel="icon" href="icon.png"><link rel="stylesheet" href="operator.css">
-<script defer src="vendor/supabase-2.116.0.js"></script><script defer src="config.js"></script><script defer src="connection.js"></script><script defer src="mirror.js"></script><script defer src="operator.js"></script>
+<script defer src="vendor/supabase-2.116.0.js"></script><script defer src="config.js"></script><script defer src="connection.js"></script><script defer src="theme-progress.js"></script><script defer src="mirror.js"></script><script defer src="operator.js"></script>
 </head>
 <body>
 <header><div class="brand"><img src="icon.png" alt=""><div><strong>WOODSMAN’S QUIZ</strong><span>Remote operator</span></div></div><div class="header-right"><span id="mode" class="pill">NOT CONNECTED</span><button id="logout" hidden>Sign out</button></div></header>
@@ -19,10 +19,10 @@
 <div id="status" class="notice" role="status" aria-live="polite">Ready to connect.</div>
 <div class="toolbar card"><button id="advance" class="primary" disabled>Next · Tab</button><button id="stop" class="danger" disabled>Stop sound</button><button id="take-control" disabled>Take control</button><button id="switch-mode" disabled>Switch to LIVE</button><span id="playing">No track connected</span></div>
 <div class="mirror-heading"><strong>Operator window</strong><span id="version"></span><span id="audience"></span><label>View <select id="mirror-scale"><option value="fit">Fit to screen</option><option value="width">Fit to width</option><option value="actual">Actual size</option></select></label><button id="mirror-fullscreen">Full screen</button></div>
-<div id="mirror-shell"><div id="mirror-size"><iframe id="operator-frame" title="Live venue operator window" sandbox="allow-same-origin"></iframe></div><div id="mirror-blocker">Connect to see the operator window.</div></div>
+<div id="mirror-shell"><div id="mirror-size"><iframe id="operator-frame" title="Live venue operator window" sandbox="allow-same-origin"></iframe></div><div id="mirror-blocker">Connect to see the operator window.</div><div id="mirror-notice" role="status" aria-live="polite" hidden></div></div>
 <p class="hint">The buttons in this window control the venue computer. Its local controls still work. Sound plays at the venue. Load files and open the broadcast window there before connecting.</p>
 </section>
-<footer>Woodsman’s Quiz · 2026.09.25.1</footer>
+<footer>Woodsman’s Quiz · 2026.10.18.1 · <a href="camera.html">Phone camera</a></footer>
 </main>
 <dialog id="confirm-dialog"><h2>Confirm action</h2><p id="confirm-message"></p><div class="inline"><button id="confirm-no">Cancel</button><button id="confirm-yes" class="primary">Confirm</button></div></dialog>
 </body></html>

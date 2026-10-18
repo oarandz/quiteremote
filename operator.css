@@ -5,3 +5,5 @@
 #mirror-shell,#mirror-size{min-height:0}#mirror-shell:fullscreen{border:0;border-radius:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;margin:0}header{padding-top:12px;padding-bottom:12px}main{padding-top:16px}.session-bar{padding:12px 18px}.notice{min-height:34px;padding:6px 3px}
 
 #mirror-size{margin-inline:auto}
+
+#mirror-notice{position:sticky;bottom:12px;z-index:6;width:fit-content;max-width:calc(100% - 32px);margin:0 auto 12px;padding:10px 16px;border:1px solid #a95666;border-radius:10px;background:#462333;color:#ffcfda;box-shadow:0 4px 18px #0008;font-size:14px;pointer-events:none}#mirror-shell:fullscreen #mirror-notice{position:absolute;left:50%;transform:translateX(-50%)}
