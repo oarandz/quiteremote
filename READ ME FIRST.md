@@ -1,16 +1,16 @@
 # Woodsman's Quiz — remote operator
 
-Version 2026.10.18.6
+Version 2026.10.20.1
 
 The website shows the actual venue operator window, with the same layout, buttons, score fields and game controls. Click **Full screen** to use just that window. Both the website and the venue computer can operate the same running quiz. The venue continues to own the sound, weekly files, timers and broadcast screen.
 
 ## Updating an existing remote installation
 
-For the 18 October Guess It accumulating-clues update, replace the venue app and upload the new **Website** contents over the files in your existing GitHub Pages repository. Close the old quiz and broadcast windows, open the new app, and refresh the remote website with **Command–Shift–R** on a Mac or **Ctrl–Shift–R** on Windows. Confirm version **2026.10.18.6** appears beside the operator window. Your current site address and host login stay the same. **Do not rerun the SQL for this update**; the database setup has not changed.
+For the 20 October round text and timer update, replace the venue app and upload the new **Website** contents over the files in your existing GitHub Pages repository. Close the old quiz and broadcast windows, open the new app, and refresh the remote website with **Command–Shift–R** on a Mac or **Ctrl–Shift–R** on Windows. Confirm version **2026.10.20.1** appears beside the operator window. Your current site address and host login stay the same. **Do not rerun the SQL for this update**; the database setup has not changed.
 
 ## 1. Update the venue computer
 
-Replace the old **Woodsman's Quiz.app** with the supplied **2026.10.18.6** app. Close and reopen the quiz and its broadcast window. If you use the folder's HTML launcher instead, use the updated Quiz System folder.
+Replace the old **Woodsman's Quiz.app** with the supplied **2026.10.20.1** app. Close and reopen the quiz and its broadcast window. If you use the folder's HTML launcher instead, use the updated Quiz System folder.
 
 Load the weekly quiz files and open the broadcast window on the venue computer as usual. Sign in to **Live Companion** using your existing quiz host email/password. TEST mode is fine.
 
