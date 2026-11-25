@@ -2,6 +2,16 @@ window.QuizOperatorMirror = (() => {
   let doc=null,current=null,ready=false,canUse=false;
   const dirty=new Map(),commits=new Set();let changeTimer=null,actions=null;
   const timerBars=new Set(),bedBorders=new Set();
+  // Older venue apps mark this field as live because typing clears a local
+  // validation message. Keep the number on the remote until explicit submission.
+  const ticketField=el=>el?.id==='monm-ticket-number';
+  function editsFor(button){
+    const ticket=doc.getElementById('monm-ticket-number'),target=ticket?.dataset.remoteControl;
+    if(button.id==='monm-ticket-cancel'&&target){
+      dirty.delete(target);commits.delete(target);ticket.value='';
+    }
+    return [...dirty].filter(([id])=>id!==target||button.id==='monm-ticket-submit').map(([target,value])=>({target,value}));
+  }
   function schedule(){
     clearTimeout(changeTimer);
     changeTimer=setTimeout(()=>{
@@ -56,17 +66,21 @@ window.QuizOperatorMirror = (() => {
         if(!el)return;
         if(el.matches('input:not([type=checkbox]),textarea,select'))return;
         e.preventDefault();e.stopPropagation();if(!canUse)return;
+        if(el.id==='monm-upload-submit'){
+          callbacks.action('scoreboard-submit',el.dataset.remoteControl,null,[]);return;
+        }
         clearTimeout(changeTimer);commits.clear();const seek=el.dataset.remoteType==='seek',rect=el.getBoundingClientRect();
-        callbacks.action(seek?'seek':'click',el.dataset.remoteControl,seek?Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)):null,[...dirty].map(([target,value])=>({target,value})));
+        callbacks.action(seek?'seek':'click',el.dataset.remoteControl,seek?Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)):null,editsFor(el));
       },true);
       doc.addEventListener('input',e=>{
         const el=e.target;if(!el.matches('[data-remote-control]:not([type=checkbox])'))return;
         dirty.set(el.dataset.remoteControl,el.value);
-        if(el.dataset.remoteLive==='true'){commits.add(el.dataset.remoteControl);schedule();}
+        if(!ticketField(el)&&el.dataset.remoteLive==='true'){commits.add(el.dataset.remoteControl);schedule();}
       });
       doc.addEventListener('change',e=>{
         const el=e.target;if(!el.matches('[data-remote-control]:not([type=checkbox])'))return;
-        dirty.set(el.dataset.remoteControl,el.value);commits.add(el.dataset.remoteControl);schedule();
+        dirty.set(el.dataset.remoteControl,el.value);
+        if(!ticketField(el)){commits.add(el.dataset.remoteControl);schedule();}
       });
       doc.addEventListener('keydown',e=>callbacks.key(e));
       if(current)render(current);
@@ -78,6 +92,9 @@ window.QuizOperatorMirror = (() => {
     const available=new Set([...template.content.querySelectorAll('[data-remote-control]:not(:disabled)')].map(el=>el.dataset.remoteControl));
     for(const target of dirty.keys())if(!available.has(target)){dirty.delete(target);commits.delete(target);}
     patch(doc.body,template.content);doc.body.className=view.bodyClass||'';doc.documentElement.className=view.htmlClass||'';
+    for(const [name,value,allowed]of [['quizEffects',view.htmlQuizEffects,['rich','simple']],['quizMotion',view.htmlQuizMotion,['still','slow','gentle']]]){
+      if(allowed.includes(value))doc.documentElement.dataset[name]=value;else delete doc.documentElement.dataset[name];
+    }
     doc.body.style.overflow=view.bodyOverflow==='hidden'?'hidden':'';
     doc.getElementById('dynamic-style').textContent=view.css||'';
     for(const bar of timerBars){if(!bar.isConnected||!bar.closest('.qt-scene[data-timer-duration]')){QuizThemeProgress.stop(bar);timerBars.delete(bar);}}

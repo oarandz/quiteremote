@@ -20,6 +20,21 @@ window.QuizThemeProgress = (() => {
     if(Math.abs(Number(animation.currentTime)-clock.elapsed*1000)>50)animation.currentTime=Math.max(0,clock.elapsed)*1000;
   }
   function stop(bar){animations.get(bar)?.animation.cancel();animations.delete(bar);}
+  function followClock(state,elapsed){
+    const target=Math.max(0,elapsed)*1000,animation=state.animation;
+    const drift=target-Number(animation.currentTime);
+    // Reset/seek immediately. Ordinary sample jitter is corrected gradually so
+    // a busy display does not make the border jump every time it hears the clock.
+    const reset=elapsed<state.elapsed-.02;
+    if(reset||!Number.isFinite(drift)||Math.abs(drift)>500){
+      animation.currentTime=target;
+      if(typeof animation.updatePlaybackRate==='function')animation.updatePlaybackRate(1);
+    }else if(typeof animation.updatePlaybackRate==='function'){
+      const rate=Math.abs(drift)<8?1:1+Math.max(-.1,Math.min(.1,drift/1000));
+      animation.updatePlaybackRate(rate);
+    }else if(Math.abs(drift)>50){animation.currentTime=target;}
+    state.elapsed=elapsed;
+  }
   function draw(bar,clock){
     const duration=Number(clock?.duration),elapsed=Number(clock?.elapsed);
     if(!Number.isFinite(duration)||duration<=0||!Number.isFinite(elapsed)){stop(bar);return;}
@@ -32,9 +47,9 @@ window.QuizThemeProgress = (() => {
       let state=animations.get(bar);
       if(!state||state.duration!==duration){
         stop(bar);
-        state={duration,animation:bar.animate([{strokeDasharray:'0 100'},{strokeDasharray:'100 100'}],{duration:duration*1000,easing:'linear',fill:'forwards'})};
+        state={duration,elapsed,animation:bar.animate([{strokeDasharray:'0 100'},{strokeDasharray:'100 100'}],{duration:duration*1000,easing:'linear',fill:'forwards'})};
         state.animation.currentTime=Math.max(0,elapsed)*1000;animations.set(bar,state);
-      }else if(Math.abs(Number(state.animation.currentTime)-elapsed*1000)>50){state.animation.currentTime=Math.max(0,elapsed)*1000;}
+      }else followClock(state,elapsed);
     }else stop(bar);
   }
   return {draw,stop,drawBed};

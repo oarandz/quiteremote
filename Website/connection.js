@@ -1,6 +1,11 @@
 /* Shared by the venue and the GitHub Pages operator. */
 window.QuizRemoteConnection = (() => {
   const config = QUIZ_REMOTE_CONFIG;
+  function signedInUser(identity) {
+    return !!identity && typeof identity.id==='string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identity.id)
+      && identity.is_anonymous!==true;
+  }
   function client(accessToken) {
     return supabase.createClient(config.url, config.key, accessToken
       ? {accessToken, auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}
@@ -9,7 +14,9 @@ window.QuizRemoteConnection = (() => {
   async function user(token) {
     const response = await fetch(config.url + '/auth/v1/user', {headers:{apikey:config.key,Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
     if (!response.ok) throw new Error('Please sign in again using your quiz host account.');
-    return response.json();
+    const identity=await response.json();
+    if(!signedInUser(identity))throw new Error('Sign in with a Live Companion account to use remote access.');
+    return identity;
   }
   function channel(db, owner, id, receive, status) {
     const ch = db.channel('quiz-control:'+owner+':'+id,{config:{private:true,broadcast:{ack:true,self:false}}});
@@ -28,6 +35,78 @@ window.QuizRemoteConnection = (() => {
     });
     ch.subscribe(status);
     return ch;
+  }
+  // Keep the same private quiz session across transport failures. Give the
+  // SDK a chance to rejoin, then replace a closed or unresponsive channel.
+  function recoveringChannel(db, owner, id, receive, notify) {
+    let current = null, generation = 0, closed = false, replacing = false;
+    let retryTimer = null, joinTimer = null, delay = 1500, ready = false;
+
+    function cancelTimers() {
+      clearTimeout(joinTimer);
+      clearTimeout(retryTimer);
+      joinTimer = retryTimer = null;
+    }
+    function retry() {
+      if (closed || replacing || retryTimer !== null) return;
+      ready = false;
+      notify('RECONNECTING');
+      retryTimer = setTimeout(() => { retryTimer = null; replace(); }, delay);
+      delay = Math.min(20000, delay*2);
+    }
+    async function replace() {
+      if (closed || replacing) return;
+      replacing = true;
+      ready = false;
+      cancelTimers();
+      const attempt = ++generation;
+      const old = current;
+      current = null;
+      try {
+        if (old) await db.removeChannel(old);
+        if (closed || attempt !== generation) return;
+        current = channel(db, owner, id, packet => {
+          if (ready && attempt === generation) receive(packet);
+        }, state => {
+          // A test transport or an already open socket can reply immediately.
+          queueMicrotask(() => {
+            if (closed || attempt !== generation) return;
+            if (state === 'SUBSCRIBED') {
+              cancelTimers();
+              delay = 1500;
+              ready = true;
+              notify(state);
+            } else retry();
+          });
+        });
+        joinTimer = setTimeout(retry, 15000);
+      } catch (error) {
+        if (!closed && attempt === generation) notify('RECONNECTING');
+      } finally {
+        replacing = false;
+        if (!closed && !current) retry();
+      }
+    }
+    function online() {
+      if (!closed && !replacing && !ready) replace();
+    }
+    async function close() {
+      closed = true;
+      ready = false;
+      ++generation;
+      cancelTimers();
+      window.removeEventListener('online',online);
+      const old = current;
+      current = null;
+      if (old) await db.removeChannel(old);
+    }
+    window.addEventListener('online',online);
+    queueMicrotask(replace);
+    return {
+      get state(){return ready ? current?.state : 'reconnecting';},
+      send(message){return current.send(message);},
+      retry, close
+    };
   }
   async function send(ch, session, packet) {
     // Never use the SDK's HTTP fallback to queue commands while disconnected.
@@ -48,5 +127,5 @@ window.QuizRemoteConnection = (() => {
     if (/quiz_remote_sessions|schema cache|42P01|PGRST|42501/.test(error?.message||'')) return 'Remote access needs the supplied Supabase setup.sql applied to this quiz project.';
     return error?.message || 'Could not connect. Check the internet connection and Supabase setup.';
   }
-  return {client,user,channel,send,explain};
+  return {client,user,signedInUser,channel,recoveringChannel,send,explain};
 })();

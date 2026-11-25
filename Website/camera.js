@@ -81,7 +81,7 @@
       if(run!==generation)return;
       capture.getVideoTracks().forEach(track=>track.onended=()=>{if(run===generation)disconnect('Camera access ended. Tap Connect camera to try again.');});
       try{const lock=await navigator.wakeLock?.request('screen');if(run!==generation){lock?.release();return;}wake=lock;}catch(_){}
-      const {data,error}=await db.auth.getSession();if(error||!data.session)throw new Error('Please sign in again.');
+      const {data,error}=await db.auth.getSession();if(error||!data.session||!QuizRemoteConnection.signedInUser(data.session.user))throw new Error('Please sign in again with a Live Companion account.');
       await db.realtime.setAuth(data.session.access_token);if(run!==generation)return;
       status('Connecting to your venue…');badge('CONNECTING');
       channel=QuizRemoteConnection.channel(db,owner,venue,packet=>receive(packet,run),state=>{
@@ -90,7 +90,7 @@
         if(joined)send({kind:'camera-join',key}).catch(()=>disconnect('Cannot reach the venue. Check remote access and scan a fresh phone code.'));
         else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(state))disconnect('Venue connection lost. Check remote access, then connect again.');
       });
-      deadline=setTimeout(()=>{if(run===generation)disconnect('No camera connection yet. Check the same host login, remote access and Wi-Fi. Some networks need a relay.');},25000);
+      deadline=setTimeout(()=>{if(run===generation)disconnect('No camera connection yet. Check remote access and Wi-Fi, then scan a fresh phone link. Some networks need a relay.');},25000);
       ping=setInterval(()=>{
         if(run!==generation||!joined)return;
         if(call){if(lastVenue&&Date.now()-lastVenue>8000){disconnect('Venue connection lost. Tap Connect camera to try again.');return;}send({kind:'camera-ping',call}).catch(()=>{});}
@@ -103,7 +103,7 @@
     try{
       const {data,error}=await db.auth.signInWithPassword({email:$('camera-email').value.trim(),password:$('camera-password').value});if(error)throw error;
       $('camera-password').value='';
-      if(data.user?.id!==owner){await db.auth.signOut();throw new Error('Use the same quiz host account as the venue that created this code.');}
+      if(!QuizRemoteConnection.signedInUser(data.user)){await db.auth.signOut({scope:'local'});throw new Error('Sign in with a Live Companion account to connect this camera.');}
       identity=data.user;$('camera-login').hidden=true;$('camera-workspace').hidden=false;$('camera-logout').hidden=false;status('Tap Connect camera and allow camera access.');
     }catch(error){$('camera-login-status').textContent=explain(error);}finally{$('camera-login-button').disabled=false;}
   };
